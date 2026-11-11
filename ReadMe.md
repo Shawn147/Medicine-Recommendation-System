@@ -18,9 +18,14 @@ It uses **Machine Learning (ML)** and **Natural Language Processing (NLP)** to a
 
 ## Running this implementation
 
-The Streamlit assistant, datasets, training scripts and tests from the working project are in this repository. Setup, model results and data notes are in [docs/implementation.md](docs/implementation.md).
+For the course demonstration, [open the live app on Streamlit](https://shahan-mrs-ai-vu.streamlit.app/). You can try it in your browser without installing anything.
+
+Use the [teacher walkthrough](shahan_mrs/docs/teacher-guide.md) to present the project from raw data through training, evaluation, and the deployed app.
+
+The Streamlit assistant, datasets, training scripts and tests are in the `shahan_mrs` folder. Setup, model results and data notes are in the [implementation guide](shahan_mrs/docs/implementation.md).
 
 ```bash
+cd shahan_mrs
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt

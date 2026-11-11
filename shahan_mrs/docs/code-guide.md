@@ -19,8 +19,13 @@ cleans and converts them into `data/`. The `collect_*.py`, `expand_*.py` and
 ## Machine learning
 
 - `src/ml/features.py`: convert symptom IDs into model input text.
-- `src/ml/condition_training.py`: splitting, weighting, baseline selection and fine-tuning.
-- `src/ml/condition_model.py`: transformer definition, saved-model loading and prediction.
+- `src/ml/training_data.py`: split examples and calculate training weights.
+- `src/ml/condition_baseline.py`: TF-IDF and logistic regression.
+- `src/ml/model_selection.py`: select regularization using validation accuracy.
+- `src/ml/condition_transformer.py`: MiniLM, masked mean pooling and the classification head.
+- `src/ml/transformer_training.py`: fine-tuning loop and checkpoint selection.
+- `src/ml/condition_training.py`: run the full condition-model training and evaluation workflow.
+- `src/ml/condition_model.py`: load saved models and rank predictions.
 - `src/ml/evaluation.py`: held-out accuracy, classification reports and confusion matrices.
 - `src/ml/intent_training.py`: train and evaluate follow-up intent classification.
 - `src/ml/intent_model.py`: MiniLM embeddings and saved intent-head inference.

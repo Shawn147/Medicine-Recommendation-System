@@ -55,7 +55,7 @@ references/             Original source datasets and course materials
 output/                 Synthetic sample reports and verification evidence
 ```
 
-Start with [the teacher walkthrough](docs/teacher-guide.md) to present the ML workflow.
+Start with [the teacher walkthrough](docs/teacher-guide.md) for a file-by-file presentation of the ML workflow and interface.
 See [the code guide](docs/code-guide.md) for where to make changes and
 [implementation notes](docs/implementation.md) for datasets, model limitations,
 training, provider settings and deployment. The original course overview and

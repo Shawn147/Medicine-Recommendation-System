@@ -4,7 +4,6 @@ import json
 import os
 import random
 import time
-from collections import Counter, defaultdict
 
 from src.paths import ROOT
 os.environ.setdefault('USE_TF', '0')
@@ -12,60 +11,19 @@ os.environ.setdefault('TOKENIZERS_PARALLELISM', 'false')
 import joblib
 import numpy as np
 import torch
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, log_loss
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from safetensors.torch import load_file, save_file
+from sklearn.metrics import accuracy_score
+from safetensors.torch import load_file
 from transformers import AutoModel, AutoTokenizer
 from src.data.loading import ARTIFACT_DIR, fingerprint, load_data
-from src.ml.features import symptom_text
-from src.ml.condition_model import BASE_MODEL, BASE_REVISION, MAX_LENGTH, ConditionTransformer
-
+from src.ml.condition_baseline import train_baseline
+from src.ml.condition_model import BASE_MODEL, BASE_REVISION, MAX_LENGTH
+from src.ml.condition_transformer import ConditionTransformer
 from src.ml.evaluation import evaluate
-
-
-def split_dataset(rows):
-    """Use fixed holdouts when supplied; otherwise make stratified 60/20/20 splits."""
-    indices = np.arange(len(rows))
-    target = np.array([row['condition'] for row in rows])
-    if all('split' in r for r in rows):
-        train, val, test = [np.array([i for i, r in enumerate(rows) if r['split'] == part])
-                            for part in ['train', 'validation', 'test']]
-        families = [{rows[i]['family_id'] for i in part} for part in [train, val, test]]
-        if families[0] & families[1] or families[0] & families[2] or families[1] & families[2]:
-            raise ValueError('Training families overlap held-out examples')
-    else:
-        trainval, test = train_test_split(indices, test_size=0.2, stratify=target, random_state=42)
-        train, val = train_test_split(trainval, test_size=0.25, stratify=target[trainval], random_state=42)
-    assert not (set(train) & set(test) or set(train) & set(val) or set(val) & set(test))
-    return train, val, test
-
-
-def calculate_training_weights(rows, train):
-    """Give each condition and each training family equal total influence."""
-    target = np.array([row['condition'] for row in rows])
-    family_counts = Counter(rows[i].get('family_id', rows[i]['id']) for i in train)
-    label_families = defaultdict(set)
-    for i in train:
-        label_families[target[i]].add(rows[i].get('family_id', rows[i]['id']))
-    weights = np.ones(len(rows), dtype=np.float32)
-    for i in train:
-        weights[i] = 1 / (family_counts[rows[i].get('family_id', rows[i]['id'])] * len(label_families[target[i]]))
-    weights[train] *= len(train) / weights[train].sum()
-    return weights
-
-
-def select_model(factory, training_x, validation_x, train_y, validation_y, sample_weights, pipeline=False):
-    """Select regularization on validation data; the test set is never inspected."""
-    candidates = []
-    for regularization in [1., 10., 100.]:
-        candidate = factory(regularization)
-        candidate.fit(training_x, train_y, **({'clf__sample_weight': sample_weights} if pipeline else {'sample_weight': sample_weights}))
-        score = float(accuracy_score(validation_y, candidate.predict(validation_x)))
-        candidates.append((score, regularization, candidate))
-    return max(candidates, key=lambda item: item[0])
+from src.ml.features import symptom_text
+from src.ml.model_selection import select_model
+from src.ml.training_data import calculate_training_weights, split_dataset
+from src.ml.transformer_training import fine_tune
 
 
 def main():
@@ -99,12 +57,11 @@ def main():
     print('SPLITS', {k:len(v) for k,v in splits.items()}, flush=True)
     # 2. Balance training families and fit the TF-IDF baseline.
     weights = calculate_training_weights(rows, train)
-    baseline = Pipeline([('tfidf', TfidfVectorizer(ngram_range=(1,2))),
-                         ('clf', LogisticRegression(max_iter=2000, random_state=42))])
     start = time.perf_counter()
-    from sklearn.base import clone
-    baseline_val, baseline_c, baseline = select_model(lambda c: clone(baseline).set_params(clf__C=c),
-        [texts[i] for i in train], [texts[i] for i in val], target[train], target[val], weights[train], pipeline=True)
+    baseline_val, baseline_c, baseline = train_baseline(
+        [texts[i] for i in train], [texts[i] for i in val],
+        target[train], target[val], weights[train],
+    )
     baseline_seconds = time.perf_counter()-start
     joblib.dump(baseline, out/'baseline.joblib')
     # 3. Encode symptom text with pretrained MiniLM.
@@ -136,37 +93,11 @@ def main():
         model.head.weight.copy_(torch.tensor(head.coef_, dtype=torch.float32))
         model.head.bias.copy_(torch.tensor(head.intercept_, dtype=torch.float32))
     frozen_val = float(accuracy_score(target[val], head.predict(embeddings[val])))
-    # 5. Fine-tune using training examples; choose the checkpoint on validation data.
-    optimizer = torch.optim.AdamW([{'params':model.encoder.parameters(), 'lr':args.learning_rate},
-                                   {'params':model.head.parameters(), 'lr':1e-3}], weight_decay=0.01)
-    best_score, patience, history = None, 0, []
-    for epoch in range(1,args.epochs+1):
-        model.train()
-        total_loss = 0.
-        shuffled = np.random.permutation(train)
-        for offset in range(0,len(shuffled),16):
-            part = shuffled[offset:offset+16]
-            optimizer.zero_grad()
-            per_row = torch.nn.functional.cross_entropy(model(batch(part)), y[part], reduction='none')
-            loss = (per_row * torch.from_numpy(weights[part])).mean()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(),1.0)
-            optimizer.step()
-            total_loss += float(loss.detach())*len(part)
-        vp = probabilities(val)
-        va = float(accuracy_score(target[val], np.array(labels)[vp.argmax(1)]))
-        vl = float(log_loss(target[val], vp, labels=labels))
-        item = {'epoch':epoch,'train_loss':total_loss/len(train),'validation_accuracy':va,'validation_loss':vl}
-        history.append(item)
-        print(json.dumps(item),flush=True)
-        score = (va,-vl)
-        if best_score is None or score > best_score:
-            best_score, best_epoch, patience = score, epoch, 0
-            save_file({k:v.detach().cpu().contiguous() for k,v in model.state_dict().items()},str(model_dir/'model.safetensors'))
-        else:
-            patience += 1
-        if patience >= 3:
-            break
+    # 5. Fine-tune on training examples and select a checkpoint on validation data.
+    best_score, best_epoch, history = fine_tune(
+        model, batch, probabilities, y, weights, train, val, target, labels,
+        args.epochs, args.learning_rate, model_dir / 'model.safetensors',
+    )
     training_seconds = time.perf_counter()-start
     model.load_state_dict(load_file(str(model_dir/'model.safetensors')))
     model.eval()

@@ -1,4 +1,4 @@
-"""Pretrained MiniLM encoder, mean pooling, and a learned condition head."""
+"""Load saved condition models and rank predictions for a symptom list."""
 import json
 import os
 from pathlib import Path
@@ -10,32 +10,15 @@ import joblib
 import numpy as np
 import torch
 from safetensors.torch import load_file
-from torch import nn
-from torch.nn import functional as F
 from transformers import AutoConfig, AutoModel, AutoTokenizer
 
 from src.data.loading import ARTIFACT_DIR, fingerprint
+from src.ml.condition_transformer import ConditionTransformer
 from src.ml.features import symptom_text
 
 BASE_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 BASE_REVISION = '1110a243fdf4706b3f48f1d95db1a4f5529b4d41'
 MAX_LENGTH = 128
-
-
-class ConditionTransformer(nn.Module):
-    def __init__(self, encoder, class_count):
-        super().__init__()
-        self.encoder = encoder
-        self.head = nn.Linear(encoder.config.hidden_size, class_count)
-
-    def embed(self, inputs):
-        hidden = self.encoder(**inputs).last_hidden_state
-        mask = inputs['attention_mask'].unsqueeze(-1)
-        pooled = (hidden * mask).sum(1) / mask.sum(1).clamp(min=1)
-        return F.normalize(pooled, p=2, dim=1)
-
-    def forward(self, inputs):
-        return self.head(self.embed(inputs))
 
 
 def load_bundle(directory=ARTIFACT_DIR):
