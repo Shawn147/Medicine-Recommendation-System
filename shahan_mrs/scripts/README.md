@@ -34,8 +34,11 @@ Open the app's Model Evaluation page to inspect saved results without retraining
 
 ## 5. Run predictions in the app
 
-`streamlit run app.py` loads saved models and starts the interface.
-It does not automatically execute the training commands.
+`bash run.sh` installs the packages, checks that SciPy imported completely, and
+loads the saved symptom model. If the weight files are missing or their
+fingerprint does not match the JSON data, it downloads the pinned MiniLM
+encoder and trains for 2 epochs before opening the app. That first training
+needs a network connection and takes several minutes.
 
 ## 6. Run regression checks
 

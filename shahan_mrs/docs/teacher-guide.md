@@ -24,7 +24,7 @@ training workflow, then open the app to trace a prediction.
 | Follow-up intent | [intent_training.py](../src/ml/intent_training.py), [intent_model.py](../src/ml/intent_model.py) | Train and run a separate classifier for what the user is asking the chatbot to do. |
 | Prediction and dialogue | [condition_model.py](../src/ml/condition_model.py), [dialogue.py](../src/chatbot/dialogue.py) | Load saved models, extract symptoms, rank condition matches, and decide whether to ask a follow-up. |
 | UI pages and components | [application.py](../src/ui/application.py), [pages.py](../src/ui/pages.py), [chat.py](../src/ui/chat.py), [browser components](../src/browser/) | Show how Streamlit assembles the pages and connects chat, history, file drop, and voice input. |
-| Deployment | [app.py](../app.py), [requirements.txt](../requirements.txt), [live Streamlit app](https://shahan-mrs-ai-vu.streamlit.app/) | Streamlit Cloud runs `shahan_mrs/app.py` from the repository's `main` branch. The app loads saved model artifacts at runtime. |
+| Deployment | [app.py](../app.py), [requirements.txt](../requirements.txt), [live Streamlit app](https://shahan-mrs-ai-vu.streamlit.app/) | Streamlit Cloud runs `shahan_mrs/app.py` from the repository's `main` branch. Set the cloud Python version to 3.12. The app loads saved model artifacts at runtime. |
 
 ## 1. Explain the problem
 
@@ -144,7 +144,7 @@ Hospital navigation, OCR, voice input and history are supporting application fea
 3. Explain feature conversion, splitting and the three model alternatives.
 4. Open saved evaluation results and state the holdout limitations.
 5. Open the [live app](https://shahan-mrs-ai-vu.streamlit.app/) or run
-   `streamlit run app.py` from `shahan_mrs`, then demonstrate a symptom conversation.
+   `bash run.sh` from `shahan_mrs`, then demonstrate a symptom conversation.
 6. Demonstrate a follow-up question and conversation summary.
 7. If showing report uploads, use a fictional report and explain which model service receives it.
 8. Finish by showing the automated tests and describing what they check.

@@ -4,20 +4,45 @@ A Streamlit assistant for educational health information, symptom follow-ups and
 medical report explanations. Condition matches and medicine references are not
 clinically validated diagnoses or prescriptions.
 
+## Requirements
+
+Python 3.9, 3.10, 3.11, or 3.12. Python 3.13 and newer has no wheels for these
+pins, so pip must not be pointed at that interpreter.
+
+| Package               | Version                             |
+| --------------------- | ----------------------------------- |
+| streamlit             | 1.41.1                              |
+| pyarrow               | 19.0.1                              |
+| pandas                | 2.2.3                               |
+| numpy                 | 1.26.4                              |
+| scikit-learn          | 1.5.2                               |
+| scipy                 | 1.17.1 on Python 3.11–3.12; 1.13.1 on 3.9–3.10 |
+| torch                 | 2.8.0+cpu on Linux, 2.8.0 otherwise |
+| transformers          | 4.57.6                              |
+| safetensors           | 0.7.0                               |
+| sentence-transformers | 5.1.2                               |
+| pypdf                 | 6.1.1                               |
+
+`packages.txt` installs `tesseract-ocr` on Streamlit Community Cloud. NumPy,
+pandas, PyArrow, scikit-learn, SciPy, and PyTorch are installed from wheels only.
+
 ## Run locally
 
-From the repository root, enter `shahan_mrs` and set up Python 3.9 or later
-with the dependencies pinned in `requirements.txt`.
+Python 3.12 is already enough. From `shahan_mrs`:
 
 ```bash
-cd shahan_mrs
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-streamlit run app.py
+bash run.sh
 ```
 
-On Windows, activate with `.venv\Scripts\activate`.
+On Windows, double-click `run.bat`, or run it from this folder. The script
+installs the packages and opens the app. It does not use the `streamlit`
+command on the system path.
+
+Before the app opens, the same script checks that SciPy imported completely
+and that the saved symptom model matches the JSON data. A missing or outdated
+model is downloaded and trained locally first. That step needs network access
+and takes several minutes. Later runs skip it.
+
 The saved symptom models run locally. General answers require local Ollama or a
 configured hosted provider; see [setup and deployment](docs/implementation.md).
 Keep API keys in environment variables or `.streamlit/secrets.toml`, never in Git.

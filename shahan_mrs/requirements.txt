@@ -1,13 +1,21 @@
+# Wheels only. Do not compile NumPy, pandas, scikit-learn, or PyTorch.
+--only-binary=numpy,pandas,pyarrow,scikit-learn,scipy,torch
+
+# Python 3.13+ has no wheels for these pins. Fail immediately instead of compiling for hours.
+shahan-mrs-needs-python-below-3-13; python_version >= "3.13"
+
 streamlit==1.41.1
 pyarrow==19.0.1
 pandas==2.2.3
 numpy==1.26.4
 scikit-learn==1.5.2
+# SciPy 1.17+ requires Python 3.11. Python 3.9 and 3.10 keep the last compatible wheel.
+scipy==1.13.1; python_version < "3.11"
+scipy==1.17.1; python_version >= "3.11"
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.8.0+cpu; sys_platform == "linux"
 torch==2.8.0; sys_platform != "linux"
 transformers==4.57.6
 safetensors==0.7.0
 sentence-transformers==5.1.2
-
 pypdf==6.1.1

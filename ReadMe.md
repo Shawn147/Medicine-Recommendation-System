@@ -20,19 +20,42 @@ It uses **Machine Learning (ML)** and **Natural Language Processing (NLP)** to a
 
 For the course demonstration, [open the live app on Streamlit](https://shahan-mrs-ai-vu.streamlit.app/). You can try it in your browser without installing anything.
 
-Use the [teacher walkthrough](shahan_mrs/docs/teacher-guide.md) to present the project from raw data through training, evaluation, and the deployed app.
-
-The Streamlit assistant, datasets, training scripts and tests are in the `shahan_mrs` folder. Setup, model results and data notes are in the [implementation guide](shahan_mrs/docs/implementation.md).
+To run the copy in this folder, Python 3.9, 3.10, 3.11, or 3.12 must be installed. Then run one command:
 
 ```bash
 cd shahan_mrs
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-streamlit run app.py
+bash run.sh
 ```
 
+On Windows, open `shahan_mrs` and run `run.bat`. The script installs the packages below and opens the app in the browser. Do not type `streamlit` or `python3 -m venv` yourself.
+
+Use the [teacher walkthrough](shahan_mrs/docs/teacher-guide.md) to present the project from raw data through training, evaluation, and the deployed app. Setup, model results and data notes are in the [implementation guide](shahan_mrs/docs/implementation.md).
+
+### Package requirements
+
+These are the exact pins in `shahan_mrs/requirements.txt`. Pip installs prebuilt wheels only for NumPy, pandas, PyArrow, scikit-learn, SciPy, and PyTorch.
+
+| Package               | Version                                        | Used for                             |
+| --------------------- | ---------------------------------------------- | ------------------------------------ |
+| streamlit             | 1.41.1                                         | Web application                      |
+| pyarrow               | 19.0.1                                         | Streamlit data tables                |
+| pandas                | 2.2.3                                          | Dataset tables and evaluation charts |
+| numpy                 | 1.26.4                                         | Model features and scores            |
+| scikit-learn          | 1.5.2                                          | Saved condition and research models  |
+| scipy                 | 1.17.1 on Python 3.11–3.12; 1.13.1 on 3.9–3.10 | Required by the condition model      |
+| torch                 | 2.8.0+cpu on Linux, 2.8.0 on macOS and Windows | MiniLM inference                     |
+| transformers          | 4.57.6                                         | MiniLM tokenizer and encoder         |
+| safetensors           | 0.7.0                                          | Saved MiniLM weights                 |
+| sentence-transformers | 5.1.2                                          | Local reference search               |
+| pypdf                 | 6.1.1                                          | Uploaded medical-report text         |
+
+Streamlit Cloud also installs `tesseract-ocr` from `shahan_mrs/packages.txt` for photo OCR.
+
 The course description names BioBERT, ClinicalBERT and Clinical-Longformer. The running app uses scikit-learn and MiniLM. Model Evaluation reports accuracy, confusion matrices, ROC AUC and false-negative rate from the saved test results.
+
+### Streamlit Cloud
+
+Deploy `shahan_mrs/app.py` from the `main` branch. In **Advanced settings**, set **Python version** to **3.12**. Community Cloud ignores `runtime.txt`. A deploy created on Python 3.13 or newer has to be deleted and created again with Python 3.12. Push `shahan_mrs/requirements.txt` before that deploy, because Cloud builds from GitHub. Cloud does not run `run.sh`, so the deployed copy also needs `artifacts/chatbot/transformer/model.safetensors` and `artifacts/chatbot/baseline.joblib`.
 
 ## 🎯 Objectives
 

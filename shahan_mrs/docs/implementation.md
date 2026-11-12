@@ -7,8 +7,7 @@ source-linked reference notes. Condition matches are not clinically validated di
 Run the commands below from the `shahan_mrs` folder.
 
 ```bash
-source .venv/bin/activate
-streamlit run app.py
+bash run.sh
 ```
 
 On Windows: `.venv\Scripts\activate`. No API key is needed for local Ollama use.
@@ -16,6 +15,8 @@ Chat history is saved in the visitor's browser local storage. With the hosted Gr
 questions and contextual descriptions are sent to Groq; avoid entering identifying details.
 
 ## Live deployment and Qwen
+
+On Streamlit Community Cloud, open Advanced settings and set Python to 3.12 before deploying. Python 3.13 and newer has no wheels for these packages. `requirements.txt` stops that build immediately. If the log says `shahan-mrs-needs-python-below-3-13`, delete the app and deploy it again with Python 3.12. `runtime.txt` does not change the cloud Python version.
 
 The default chat endpoint is `http://127.0.0.1:11434/api/chat`. That works when
 Streamlit and Ollama run on the same computer. On Streamlit Community Cloud,
@@ -81,19 +82,19 @@ and Model Evaluation remain available under **About & sources → Project resour
 
 ## Rebuild
 
-Tested on Python 3.9.6 with the pinned packages in `requirements.txt`.
+Use Python 3.12. Python 3.13 and newer has no wheels for these pins.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python scripts/prepare_json.py
-python scripts/download_model.py
-python scripts/train_chatbot.py
-streamlit run app.py
+bash setup.sh
+.venv/bin/python scripts/prepare_json.py
+.venv/bin/python scripts/download_model.py
+.venv/bin/python scripts/train_chatbot.py
+.venv/bin/streamlit run app.py
 ```
 
 The one-time download fetches public `sentence-transformers/all-MiniLM-L6-v2` at revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`. Training and inference are local. Only locally generated `baseline.joblib` should be loaded.
+
+`bash run.sh` and `run.bat` run that download and a 2-epoch train themselves when the saved weights are missing or the data fingerprint has changed. They also reinstall the pinned SciPy wheel when the installed package cannot be imported. A normal later launch only checks and then opens the app.
 
 Streamlit polls for local Python changes and reruns on save. After changing server configuration, restart Streamlit so the new settings take effect.
 
@@ -282,7 +283,7 @@ The design's fictional patient details, clinical verification claims and sample
 diagnoses are not included. Predictions come from the existing saved model.
 Model scores and model selection are not shown in the main conversation.
 
-Use `streamlit run app.py` to start the interface. Restart the process after Python
+Use `bash run.sh` to install the packages and start the interface. Restart the process after Python
 changes because file watching is disabled. Conversations are saved in browser local
 storage and can be cleared or downloaded from Conversation history. Browser storage
 may be unavailable in private browsing or restrictive settings.
