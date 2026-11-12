@@ -3,8 +3,9 @@ import json
 
 import numpy as np
 import torch
-from safetensors.torch import save_file
 from sklearn.metrics import accuracy_score, log_loss
+
+from src.ml.compact_weights import save_compact_state
 
 
 def fine_tune(model, batch, probabilities, label_ids, weights, train, validation,
@@ -46,11 +47,7 @@ def fine_tune(model, batch, probabilities, label_ids, weights, train, validation
         score = (accuracy, -validation_loss)
         if best_score is None or score > best_score:
             best_score, best_epoch, patience = score, epoch, 0
-            checkpoint = {
-                name: value.detach().cpu().contiguous()
-                for name, value in model.state_dict().items()
-            }
-            save_file(checkpoint, str(checkpoint_path))
+            save_compact_state(model.state_dict(), checkpoint_path)
         else:
             patience += 1
         if patience >= 3:

@@ -9,10 +9,10 @@ os.environ.setdefault('TOKENIZERS_PARALLELISM', 'false')
 import joblib
 import numpy as np
 import torch
-from safetensors.torch import load_file
 from transformers import AutoConfig, AutoModel, AutoTokenizer
 
 from src.data.loading import ARTIFACT_DIR, fingerprint
+from src.ml.compact_weights import load_compact_state, restore_estimator_precision
 from src.ml.condition_transformer import ConditionTransformer
 from src.ml.features import symptom_text
 
@@ -30,13 +30,14 @@ def load_bundle(directory=ARTIFACT_DIR):
     tokenizer = AutoTokenizer.from_pretrained(directory / 'transformer', local_files_only=True)
     encoder = AutoModel.from_config(AutoConfig.from_pretrained(directory / 'transformer', local_files_only=True))
     model = ConditionTransformer(encoder, len(metadata['labels']))
-    model.load_state_dict(load_file(str(directory / 'transformer/model.safetensors')))
+    model.load_state_dict(load_compact_state(directory / 'transformer/model.safetensors'))
     model.eval()
+    baseline = restore_estimator_precision(joblib.load(directory / 'baseline.joblib'))
     return {
         'transformer': model,
         'tokenizer': tokenizer,
         'metrics': metadata,
-        'ml': joblib.load(directory / 'baseline.joblib'),
+        'ml': baseline,
     }
 
 

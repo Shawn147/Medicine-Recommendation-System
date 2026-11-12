@@ -8,7 +8,6 @@ import time
 from src.paths import ROOT
 os.environ.setdefault('USE_TF', '0')
 os.environ.setdefault('TOKENIZERS_PARALLELISM', 'false')
-import joblib
 import numpy as np
 import torch
 from sklearn.linear_model import LogisticRegression
@@ -16,6 +15,7 @@ from sklearn.metrics import accuracy_score
 from safetensors.torch import load_file
 from transformers import AutoModel, AutoTokenizer
 from src.data.loading import ARTIFACT_DIR, fingerprint, load_data
+from src.ml.compact_weights import dump_compact_estimator
 from src.ml.condition_baseline import train_baseline
 from src.ml.condition_model import BASE_MODEL, BASE_REVISION, MAX_LENGTH
 from src.ml.condition_transformer import ConditionTransformer
@@ -63,7 +63,7 @@ def main():
         target[train], target[val], weights[train],
     )
     baseline_seconds = time.perf_counter()-start
-    joblib.dump(baseline, out/'baseline.joblib')
+    dump_compact_estimator(baseline, out/'baseline.joblib')
     # 3. Encode symptom text with pretrained MiniLM.
     pretrained = ROOT/'artifacts/pretrained/minilm'
     if not (pretrained/'model.safetensors').exists():
@@ -87,7 +87,7 @@ def main():
     # 4. Train a classifier on frozen embeddings, then initialize the fine-tuning head.
     frozen_val, head_c, head = select_model(lambda c: LogisticRegression(C=c, max_iter=2000, random_state=42),
                                      embeddings[train], embeddings[val], target[train], target[val], weights[train])
-    joblib.dump(head, out/'frozen_head.joblib')
+    dump_compact_estimator(head, out/'frozen_head.joblib')
     assert list(head.classes_) == labels
     with torch.no_grad():
         model.head.weight.copy_(torch.tensor(head.coef_, dtype=torch.float32))
