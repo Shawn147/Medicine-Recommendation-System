@@ -64,7 +64,8 @@ class RoutingTests(unittest.TestCase):
     def test_song_title_hello_is_not_a_greeting(self):
         questions = ('who sing the song hello',
                      'I just ask you a simple question who sing the song hello',
-                     'I have a quick question who sings the song hello')
+                     'I have a quick question who sings the song hello',
+                     'hello hello 1234 1234 1234 sing this song')
         with patch('src.ml.intent_model.classify_intent', return_value='greeting'):
             for text in questions:
                 self.say(text)
